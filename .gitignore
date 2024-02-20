@@ -2,6 +2,7 @@
 static
 media
 project/local_settings.py
+data/*
 
 # Django #
 *.log
