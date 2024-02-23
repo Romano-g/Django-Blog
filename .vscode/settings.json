@@ -1,0 +1,44 @@
+{
+    "workbench.startupEditor": "none",
+    "explorer.compactFolders": false,
+    "editor.rulers": [80],
+    "code-runner.executorMap": {
+      "python": "cls ; python -u"
+    },
+    "code-runner.runInTerminal": true,
+    "code-runner.ignoreSelection": true,
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.autopep8",
+      "editor.tabSize": 4,
+      "editor.insertSpaces": true,
+      "editor.formatOnSave": true,
+    },
+    "python.languageServer": "Pylance",
+    "python.defaultInterpreterPath": "./venv/Scripts/python",
+    "python.analysis.typeCheckingMode": "basic",
+    "git.enableSmartCommit": true,
+    "explorer.confirmDelete": false,
+    "explorer.confirmDragAndDrop": false,
+    "editor.wordWrap": "wordWrapColumn",
+    "python.analysis.autoImportCompletions": true,
+    "emmet.includeLanguages": {
+      "django-html": "html",
+    },
+    "files.associations": {
+      "*.html": "django-html",
+    },
+    "[django-html]": {
+      "editor.quickSuggestions": {
+        "other": true,
+        "comments": true,
+        "strings": true
+      },
+      "editor.indentSize": "tabSize",
+      "editor.tabSize": 2,
+    },
+    "autopep8.args": [
+      "--aggressive",
+      "--indent-size=4",
+      "--max-line-length=80",
+    ],
+}

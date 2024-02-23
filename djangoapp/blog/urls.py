@@ -1,6 +1,8 @@
-from django.contrib import admin
+from blog.views import index
 from django.urls import path
 
+app_name = 'blog'
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('', index, name='index'),
 ]
