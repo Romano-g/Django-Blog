@@ -1,4 +1,3 @@
-from ctypes import resize
 from django.db import models
 from utils.model_validators import validate_png
 from utils.images import resize_image
