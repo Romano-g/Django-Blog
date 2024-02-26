@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from utils.rands import slugify_new
-from django.utils import timezone
 
 
 class Tag(models.Model):
@@ -90,7 +89,7 @@ class Post(models.Model):
         default=True,
         help_text='Se marcado, exibirá a capa dentro do post.',
     )
-    created_at = models.DateTimeField(timezone.now, auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     # user.post_created_by.all
     created_by = models.ForeignKey(
         User,
