@@ -21,12 +21,13 @@ from django.urls import path, include
 
 urlpatterns = [
     path('', include('blog.urls')),
+    path('summernote/', include('django_summernote.urls')),
     path('admin/', admin.site.urls),
 ]
 
 
 if settings.DEBUG:
-    urlpatterns += static(
+    urlpatterns += static(  # type: ignore
         settings.MEDIA_URL,
         document_root=settings.MEDIA_ROOT
     )
