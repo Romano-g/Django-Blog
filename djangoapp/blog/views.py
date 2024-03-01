@@ -1,170 +1,184 @@
-from django.core.paginator import Paginator
-from django.shortcuts import render
+from django.shortcuts import redirect
 from blog.models import Post, Page
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.http import Http404
+from django.views.generic import ListView, DetailView
 
 
 PER_PAGE = 9
 
 
-def index(request):
-    posts = Post.objects.get_published()  # type:ignore
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+class PostListView(ListView):
+    template_name = 'blog/pages/index.html'
+    context_object_name = 'posts'
+    paginate_by = PER_PAGE
+    queryset = Post.objects.get_published()  # type:ignore
 
-    context = {
-        'page_obj': page_obj,
-        'page_title': 'Home'
-    }
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    return render(
-        request,
-        'blog/pages/index.html',
-        context,
-    )
+        context.update({
+            'page_title': 'Home'
+        })
+
+        return context
 
 
-def created_by(request, author_id):
-    user = User.objects.filter(pk=author_id).first()
+class CreatedByListView(PostListView):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._temp_context = {}
 
-    if user is None:
-        raise Http404()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    user_full_name = user.username
-    posts = (
-        Post.objects.get_published().filter(created_by__pk=author_id)  # type:ignore
-    )
+        user = self._temp_context['user']
 
-    if user.first_name:
-        user_full_name = f'{user.first_name}'
+        user_full_name = user.username
 
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+        if user.first_name:
+            user_full_name = f'{user.first_name}'
 
-    context = {
-        'page_obj': page_obj,
-        'page_title': f'Criado por: {user_full_name}'
-    }
+        context.update({'page_title': f'Criado por: {user_full_name}'})
+        return context
 
-    return render(
-        request,
-        'blog/pages/index.html',
-        context,
-    )
+    def get_queryset(self):
+        queryset = super().get_queryset()
 
+        queryset = queryset.filter(
+            created_by__pk=self._temp_context['user'].pk
+        )
 
-def category(request, slug):
-    posts = (
-        Post.objects.get_published().filter(category__slug=slug)  # type:ignore
-    )
+        return queryset
 
-    if len(posts) == 0:
-        raise Http404()
+    def get(self, request, *args, **kwargs):
+        author_id = self.kwargs.get('author_id')
+        user = User.objects.filter(pk=author_id).first()
 
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+        if user is None:
+            raise Http404()
 
-    context = {
-        'page_obj': page_obj,
-        'page_title': f'Categoria: {page_obj[0].category.name}'
-    }
+        self._temp_context.update({
+            'author_id': author_id,
+            'user': user,
+        })
 
-    return render(
-        request,
-        'blog/pages/index.html',
-        context,
-    )
+        return super().get(request, *args, **kwargs)
 
 
-def page(request, slug):
-    page_obj = (
-        Page.objects.filter(
-            is_published=True).filter(
-            slug=slug).first()  # type:ignore
-    )
+class CategoryListView(PostListView):
+    allow_empty = False
 
-    if page_obj is None:
-        raise Http404()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    context = {
-        'page': page_obj,
-        'page_title': 'Page'
-    }
+        page_title = (
+            f'Categoria: {self.object_list[0].category.name}'  # type:ignore
+        )
 
-    return render(
-        request,
-        'blog/pages/page.html',
-        context,
-    )
+        context.update(
+            {'page_title': page_title}
+        )
 
+        return context
 
-def post(request, slug):
-    post_obj = (
-        Post.objects.get_published().filter(slug=slug).first()  # type:ignore
-    )
-
-    if post_obj is None:
-        raise Http404()
-
-    context = {
-        'post': post_obj,
-        'page_title': 'Post'
-    }
-
-    return render(
-        request,
-        'blog/pages/post.html',
-        context,
-    )
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            category__slug=self.kwargs.get('slug')
+        )
 
 
-def tag(request, slug):
-    posts = (
-        Post.objects.get_published().filter(tags__slug=slug)  # type:ignore
-    )
+class TagListView(PostListView):
+    allow_empty = False
 
-    if len(posts) == 0:
-        raise Http404()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+        page_title = (
+            'Tags'
+        )
 
-    context = {
-        'page_obj': page_obj,
-        'page_title': 'Tag',
-    }
+        context.update(
+            {'page_title': page_title}
+        )
 
-    return render(
-        request,
-        'blog/pages/index.html',
-        context,
-    )
+        return context
+
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            tags__slug=self.kwargs.get('slug')
+        )
 
 
-def search(request):
-    search_value = request.GET.get('search', '').strip()
-    posts = (
-        Post.objects.get_published().filter(  # type:ignore
+class PageDetailView(DetailView):
+    model = Page
+    template_name = 'blog/pages/page.html'
+    slug_field = 'slug'
+    context_object_name = 'page'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        page = self.get_object()
+
+        context.update({
+            'page_title': f'Page: {page.title}'  # type:ignore
+        })
+
+        return context
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_published=True)
+
+
+class PostDetailView(DetailView):
+    model = Post
+    template_name = 'blog/pages/post.html'
+    context_object_name = 'post'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        post = self.get_object()
+
+        context.update({
+            'page_title': f'Post: {post.title}'  # type:ignore
+        })
+
+        return context
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_published=True)
+
+
+class SearchListView(PostListView):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._search_value = ''
+
+    def setup(self, request, *args, **kwargs):
+        self._search_value = request.GET.get('search', '').strip()
+        return super().setup(request, *args, **kwargs)
+
+    def get_queryset(self):
+        search_value = self._search_value
+        return super().get_queryset().filter(
             Q(title__icontains=search_value) |
             Q(excerpt__icontains=search_value) |
             Q(content__icontains=search_value)
         )[:PER_PAGE]
-    )
 
-    context = {
-        'page_obj': posts,
-        'page_title': f'Search: {search_value}',
-        'search_value': search_value,
-    }
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        search_value = self._search_value
 
-    return render(
-        request,
-        'blog/pages/index.html',
-        context,
-    )
+        context.update({
+            'page_title': f'Search: {search_value}',
+            'search_value': search_value,
+        })
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        if self._search_value == '':
+            return redirect('blog:index')
+        return super().get(request, *args, **kwargs)
