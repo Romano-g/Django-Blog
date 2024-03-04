@@ -9,7 +9,11 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/wsgi/
 
 import os
 
+from dotenv import load_dotenv
+from project.settings import DOTENV_DIR
 from django.core.wsgi import get_wsgi_application
+
+load_dotenv(DOTENV_DIR, override=True)
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
 
